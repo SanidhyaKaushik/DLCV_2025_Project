@@ -10,8 +10,6 @@ transform = transforms.Compose([
 
 dataset = CIFAR10(root="./data", train=True, download=True, transform=transform)
 
-dataloader = DataLoader(dataset, batch_size=32, shuffle=True)
-
 
 def tokenize_image(image, patch_size=4):
     """

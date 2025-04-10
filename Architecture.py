@@ -11,7 +11,7 @@ class EncoderOnlyArchitecture(nn.Module):
         self.pad_token_id = pad_token_id
         self.token_embedding = nn.Embedding(vocab_size, embd_dim)
         self.position_embedding = nn.Parameter(torch.randn(1, seq_len, embd_dim))
-        self.encoder_blocks = nn.ModuleList([EncoderOnlyBlock(embd_dim, seq_len) for _ in range(num_encoder_blocks)])
+        self.encoder_blocks = nn.ModuleList([EncoderOnlyBlock(embd_dim) for _ in range(num_encoder_blocks)])
         self.classification_head = nn.Linear(embd_dim, n_cats)
 
     def forward(self, input_tokens):
@@ -32,5 +32,5 @@ class EncoderOnlyArchitecture(nn.Module):
         
         last_token_rep = encoder_output[:, -1, :]
         
-        logits = self.lm_head(last_token_rep)
+        logits = self.classfication_head(last_token_rep)
         return logits

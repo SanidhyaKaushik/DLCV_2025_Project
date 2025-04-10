@@ -3,15 +3,15 @@ import torch.nn as nn
 import torch.nn.functional as F 
 from Selective_Attention_Module.py import SelectiveAttentionModule
 
-class DecoderOnlyBlock(nn.Module):
+class EncoderOnlyBlock(nn.Module):
   def __init__(self ,embd_dim , seq_len):
-    super(DecoderOnlyBlock , self).__init__()
+    super(EncoderOnlyBlock , self).__init__()
     self.embd_dim = embd_dim
     self.seq_len = seq_len
-    self.attention_head1 = SelectiveAttentionModule(embd_dim = embd_dim ,k_dim = embd_dim , v_dim = embd_dim , seq_len = seq_len , mask = True)
-    self.attention_head2 = SelectiveAttentionModule(embd_dim = embd_dim ,k_dim = embd_dim , v_dim = embd_dim , seq_len = seq_len , mask = True)
-    self.attention_head3 = SelectiveAttentionModule(embd_dim = embd_dim ,k_dim = embd_dim , v_dim = embd_dim , seq_len = seq_len , mask = True)
-    self.attention_head4 = SelectiveAttentionModule(embd_dim = embd_dim ,k_dim = embd_dim , v_dim = embd_dim , seq_len = seq_len , mask = True)
+    self.attention_head1 = SelectiveAttentionModule(embd_dim = embd_dim ,k_dim = embd_dim , v_dim = embd_dim , seq_len = seq_len , mask = False)
+    self.attention_head2 = SelectiveAttentionModule(embd_dim = embd_dim ,k_dim = embd_dim , v_dim = embd_dim , seq_len = seq_len , mask = False)
+    self.attention_head3 = SelectiveAttentionModule(embd_dim = embd_dim ,k_dim = embd_dim , v_dim = embd_dim , seq_len = seq_len , mask = False)
+    self.attention_head4 = SelectiveAttentionModule(embd_dim = embd_dim ,k_dim = embd_dim , v_dim = embd_dim , seq_len = seq_len , mask = False)
     self.linear1 = nn.Linear(4*embd_dim , embd_dim)
     self.norm1 = nn.LayerNorm(embd_dim)
     self.linear2 = nn.Linear(embd_dim , embd_dim)

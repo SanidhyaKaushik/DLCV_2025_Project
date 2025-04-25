@@ -68,6 +68,7 @@ class SelectiveAttentionModule(nn.Module):
 
     return torch.bmm(attention_scores , gated_V)
 
+  @torch.no_grad()
   def attention_map(self , embedding_matrix):
     """
     Takes an embedding matrix as input and returns a tensor of attention maps, 
@@ -112,6 +113,7 @@ class SelectiveAttentionModule(nn.Module):
     attention_scores = torch.softmax(attention_wts  ,dim = -1 , dtype = torch.float32)
     return attention_scores
 
+  @torch.no_grad()
   def token_aware_temperatures(self , embedding_matrix):
     """
     Takes an embedding matrix as input and returns two tensors of shape 
@@ -138,6 +140,7 @@ class SelectiveAttentionModule(nn.Module):
 
     return token_temp_q ,token_temp_v
 
+  @torch.no_grad()
   def position_aware_temperatures(self , embedding_matrix):
     """
     Takes an embedding matrix as input and returns a tensor of shape 

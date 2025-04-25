@@ -11,7 +11,8 @@ class ModifiedSelectiveAttentionModule(nn.Module):
     self.Wq = nn.Linear(embd_dim , k_dim)
     self.Wk = nn.Linear(embd_dim , k_dim)
     self.Wv = nn.Linear(embd_dim , v_dim)
-    self.alpha = nn.Parameter(torch.empty(seq_len ,))
+    self.alphaq = nn.Parameter(torch.empty(seq_len ,))
+    self.alphav = nn.Parameter(torch.empty(seq_len ,))
     self.tokenq = nn.Parameter(torch.empty(k_dim , k_dim))
     self.tokenv = nn.Parameter(torch.empty(v_dim , v_dim))
 
@@ -20,7 +21,8 @@ class ModifiedSelectiveAttentionModule(nn.Module):
   def _init_parameters(self):
     nn.init.xavier_uniform_(self.tokenq)
     nn.init.xavier_uniform_(self.tokenv)
-    nn.init.constant_(self.alpha, 0.0)
+    nn.init.constant_(self.alphaq, 0.0)
+    nn.init.constant_(self.alphav, 0.0)
 
   def forward(self , embedding_matrix):
     """
@@ -40,8 +42,8 @@ class ModifiedSelectiveAttentionModule(nn.Module):
 
     tokenq = self.tokenq.unsqueeze(0).repeat(batch_size,1,1) #(batch_size , k_dim , k_dim)
     tokenv = self.tokenv.unsqueeze(0).repeat(batch_size,1,1) #(batch_size , v_dim , v_dim)
-    alphaq = self.alpha.view(1,seq_len,1).repeat(batch_size,1,dk) # (batch_size , seq_len , k_dim)
-    alphav = self.alpha.view(1,seq_len,1).repeat(batch_size,1,dv) # (batch_size , seq_len , v_dim)
+    alphaq = self.alphaq.view(1,seq_len,1).repeat(batch_size,1,dk) # (batch_size , seq_len , k_dim)
+    alphav = self.alphav.view(1,seq_len,1).repeat(batch_size,1,dv) # (batch_size , seq_len , v_dim)
   
     pdt_q = torch.bmm(tokenq , F.gelu(Q.transpose(1,2))) #(batch_size , k_dim , seq_len)
     pdt_v = torch.bmm(tokenv , F.gelu(V.transpose(1,2))) #(batch_size , v_dim , seq_len)
@@ -112,8 +114,8 @@ class ModifiedSelectiveAttentionModule(nn.Module):
 
     tokenq = self.tokenq.unsqueeze(0).repeat(batch_size,1,1) #(batch_size , k_dim , k_dim)
     tokenv = self.tokenv.unsqueeze(0).repeat(batch_size,1,1) #(batch_size , v_dim , v_dim)
-    alphaq = self.alpha.view(1,seq_len,1).repeat(batch_size,1,dk) # (batch_size , seq_len , k_dim)
-    alphav = self.alpha.view(1,seq_len,1).repeat(batch_size,1,dv) # (batch_size , seq_len , v_dim)
+    alphaq = self.alphaq.view(1,seq_len,1).repeat(batch_size,1,dk) # (batch_size , seq_len , k_dim)
+    alphav = self.alphav.view(1,seq_len,1).repeat(batch_size,1,dv) # (batch_size , seq_len , v_dim)
   
     pdt_q = torch.bmm(tokenq , F.gelu(Q.transpose(1,2))) #(batch_size , k_dim , seq_len)
     pdt_v = torch.bmm(tokenv , F.gelu(V.transpose(1,2))) #(batch_size , v_dim , seq_len)
@@ -177,9 +179,6 @@ class ModifiedSelectiveAttentionModule(nn.Module):
     V = self.Wv(embedding_matrix) #(batch_size , seq_len , v_dim)
 
     batch_size = embedding_matrix.shape[0]
-    dk = K.shape[-1]
-    dv = V.shape[-1]
-    seq_len = self.seq_len
 
     tokenq = self.tokenq.unsqueeze(0).repeat(batch_size,1,1) #(batch_size , k_dim , k_dim)
     tokenv = self.tokenv.unsqueeze(0).repeat(batch_size,1,1) #(batch_size , v_dim , v_dim)
@@ -209,8 +208,8 @@ class ModifiedSelectiveAttentionModule(nn.Module):
     dv = V.shape[-1]
     seq_len = self.seq_len
 
-    alphaq = self.alpha.view(1,seq_len,1).repeat(batch_size,1,dk) # (batch_size , seq_len , k_dim)
-    alphav = self.alpha.view(1,seq_len,1).repeat(batch_size,1,dv) # (batch_size , seq_len , v_dim)
+    alphaq = self.alphaq.view(1,seq_len,1).repeat(batch_size,1,dk) # (batch_size , seq_len , k_dim)
+    alphav = self.alphav.view(1,seq_len,1).repeat(batch_size,1,dv) # (batch_size , seq_len , v_dim)
     
     # Computation of dimension aware knobs for better learning of position aware temperature for query vectors
 

@@ -5,6 +5,4 @@ Selective Attention attempts to improve upon vanilla attention by introducing to
 
 We aim to build upon the proposed selective attention module. We aim to vectorize the temperatures so as to gain a fine grained control over the temperature scaling and have more interpretability in terms what role does each component of a query vector play in deciding the sparsity of attention maps. Although the authors mention in the original paper that vectorization of temperatures didn't result in significant gains, we aim to pursue this direction more innovatively by manually controling the scaling factors corresponding to each dimension keeping in mind the role that temperature scaling plays.
 
-If time permits, we will explore different ways to merge token and position aware temperatures (since they are vectors now, it opens up a myriad of ideas for us to explore different combinatinon strategies) and also experiment with different score calculation metrics.
-
 The implementation is still in progress.

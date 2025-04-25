@@ -42,7 +42,7 @@ class ModifiedSelectiveAttentionModule(nn.Module):
     tokenv = self.tokenv.unsqueeze(0).repeat(batch_size,1,1) #(batch_size , v_dim , v_dim)
     alphaq = self.alpha.view(1,seq_len,1).repeat(batch_size,1,dk) # (batch_size , seq_len , k_dim)
     alphav = self.alpha.view(1,seq_len,1).repeat(batch_size,1,dv) # (batch_size , seq_len , v_dim)
-
+  
     pdt_q = torch.bmm(tokenq , F.gelu(Q.transpose(1,2))) #(batch_size , k_dim , seq_len)
     pdt_v = torch.bmm(tokenv , F.gelu(V.transpose(1,2))) #(batch_size , v_dim , seq_len)
 
@@ -53,24 +53,32 @@ class ModifiedSelectiveAttentionModule(nn.Module):
     # Computation of dimension aware knobs for better learning of position aware temperature for query vectors
 
     attn_map_exps = torch.bmm(Q , K.transpose(1,2)) #(batch_size , seq_len , seq_len)
-     
-    max_ids = attn_map_exps.argmax(dim = 2 , keepdim = True) #(batch_size , seq_len , 1)
-    knobs = torch.zeros(batch_size , seq_len , dk) #(batch_size, seq_len , dk)
-    for batch_id in range(batch_size):
-      for token_id in range(seq_len):
-        for dim in range(dk):
-          knobs[batch_id , token_id , dim] = Q[batch_id , token_id , dim] * torch.sum(K[batch_id , : , dim] - K[batch_id , max_ids[batch_id , token_id , 0] , dim])
-    
-    knobs = torch.abs(knobs)
+    max_ids = attn_map_exps.argmax(dim=2, keepdim=True)
+    # max_ids: (batch_size, seq_len, 1)
+    max_ids_exp = max_ids.expand(-1, -1, dk)  # (batch_size, seq_len, dk)
 
+    # Gather the max key for each position and batch
+    K_max = torch.gather(K, 1, max_ids_exp)  # (batch_size, seq_len, dk)
+
+    # Sum over sequence dimension
+    K_sum = K.sum(dim=1, keepdim=True)  # (batch_size, 1, dk)
+
+    # Compute knobs
+    knobs = Q * (K_sum - seq_len * K_max)  # (batch_size, seq_len, dk)
+    knobs = knobs.abs()
     # Knob computation ends here
 
-    indicesk = torch.arange(1 , seq_len+1 , device = alphaq.device).expand(batch_size, seq_len, dk)
-    indicesv = torch.arange(1 , seq_len+1 , device = alphaq.device).expand(batch_size, seq_len, dv)
+    indicesk = torch.arange(1, seq_len + 1, device=alphaq.device).unsqueeze(1)  # (seq_len, 1)
+    indicesk = indicesk.expand(seq_len, dk)  # (seq_len, dk)
+    indicesk = indicesk.unsqueeze(0).expand(batch_size, seq_len, dk)  # (batch_size, seq_len, dk)
+    
+    indicesv = torch.arange(1, seq_len + 1, device=alphaq.device).unsqueeze(1)  # (seq_len, 1)
+    indicesv = indicesv.expand(seq_len, dv)  # (seq_len, dv)
+    indicesv = indicesv.unsqueeze(0).expand(batch_size, seq_len, dv)  # (batch_size, seq_len, dv)
 
     position_temp_q = 1 + torch.sigmoid(alphaq - knobs) * torch.log(indicesk) #(batch_size , seq_len ,dk)
     position_temp_v = 1 + torch.sigmoid(alphav) * torch.log(indicesv) #(batch_size , seq_len ,dv)
-    
+  
     temps_q = position_temp_q + token_temp_q #(batch_size , seq_len , dk)
     temps_v = position_temp_v + token_temp_v #(batch_size , seq_len , dv)
 
@@ -106,7 +114,7 @@ class ModifiedSelectiveAttentionModule(nn.Module):
     tokenv = self.tokenv.unsqueeze(0).repeat(batch_size,1,1) #(batch_size , v_dim , v_dim)
     alphaq = self.alpha.view(1,seq_len,1).repeat(batch_size,1,dk) # (batch_size , seq_len , k_dim)
     alphav = self.alpha.view(1,seq_len,1).repeat(batch_size,1,dv) # (batch_size , seq_len , v_dim)
-
+  
     pdt_q = torch.bmm(tokenq , F.gelu(Q.transpose(1,2))) #(batch_size , k_dim , seq_len)
     pdt_v = torch.bmm(tokenv , F.gelu(V.transpose(1,2))) #(batch_size , v_dim , seq_len)
 
@@ -117,24 +125,32 @@ class ModifiedSelectiveAttentionModule(nn.Module):
     # Computation of dimension aware knobs for better learning of position aware temperature for query vectors
 
     attn_map_exps = torch.bmm(Q , K.transpose(1,2)) #(batch_size , seq_len , seq_len)
-     
-    max_ids = attn_map_exps.argmax(dim = 2 , keepdim = True) #(batch_size , seq_len , 1)
-    knobs = torch.zeros(batch_size , seq_len , dk) #(batch_size, seq_len , dk)
-    for batch_id in range(batch_size):
-      for token_id in range(seq_len):
-        for dim in range(dk):
-          knobs[batch_id , token_id , dim] = Q[batch_id , token_id , dim] * torch.sum(K[batch_id , : , dim] - K[batch_id , max_ids[batch_id , token_id , 0] , dim])
-    
-    knobs = torch.abs(knobs)
+    max_ids = attn_map_exps.argmax(dim=2, keepdim=True)
+    # max_ids: (batch_size, seq_len, 1)
+    max_ids_exp = max_ids.expand(-1, -1, dk)  # (batch_size, seq_len, dk)
 
+    # Gather the max key for each position and batch
+    K_max = torch.gather(K, 1, max_ids_exp)  # (batch_size, seq_len, dk)
+
+    # Sum over sequence dimension
+    K_sum = K.sum(dim=1, keepdim=True)  # (batch_size, 1, dk)
+
+    # Compute knobs
+    knobs = Q * (K_sum - seq_len * K_max)  # (batch_size, seq_len, dk)
+    knobs = knobs.abs()
     # Knob computation ends here
 
-    indicesk = torch.arange(1 , seq_len+1 , device = alphaq.device).expand(batch_size, seq_len, dk)
-    indicesv = torch.arange(1 , seq_len+1 , device = alphaq.device).expand(batch_size, seq_len, dv)
+    indicesk = torch.arange(1, seq_len + 1, device=alphaq.device).unsqueeze(1)  # (seq_len, 1)
+    indicesk = indicesk.expand(seq_len, dk)  # (seq_len, dk)
+    indicesk = indicesk.unsqueeze(0).expand(batch_size, seq_len, dk)  # (batch_size, seq_len, dk)
+    
+    indicesv = torch.arange(1, seq_len + 1, device=alphaq.device).unsqueeze(1)  # (seq_len, 1)
+    indicesv = indicesv.expand(seq_len, dv)  # (seq_len, dv)
+    indicesv = indicesv.unsqueeze(0).expand(batch_size, seq_len, dv)  # (batch_size, seq_len, dv)
 
     position_temp_q = 1 + torch.sigmoid(alphaq - knobs) * torch.log(indicesk) #(batch_size , seq_len ,dk)
     position_temp_v = 1 + torch.sigmoid(alphav) * torch.log(indicesv) #(batch_size , seq_len ,dv)
-    
+  
     temps_q = position_temp_q + token_temp_q #(batch_size , seq_len , dk)
     temps_v = position_temp_v + token_temp_v #(batch_size , seq_len , dv)
 
@@ -168,11 +184,13 @@ class ModifiedSelectiveAttentionModule(nn.Module):
     tokenq = self.tokenq.unsqueeze(0).repeat(batch_size,1,1) #(batch_size , k_dim , k_dim)
     tokenv = self.tokenv.unsqueeze(0).repeat(batch_size,1,1) #(batch_size , v_dim , v_dim)
     
+  
     pdt_q = torch.bmm(tokenq , F.gelu(Q.transpose(1,2))) #(batch_size , k_dim , seq_len)
     pdt_v = torch.bmm(tokenv , F.gelu(V.transpose(1,2))) #(batch_size , v_dim , seq_len)
 
     token_temp_q = F.tanh(pdt_q.transpose(1,2)) #(batch_size , seq_len , k_dim)
     token_temp_v = F.tanh(pdt_v.transpose(1,2)) #(batch_size , seq_len , v_dim)
+
 
     return token_temp_q ,token_temp_v
 
@@ -193,24 +211,32 @@ class ModifiedSelectiveAttentionModule(nn.Module):
 
     alphaq = self.alpha.view(1,seq_len,1).repeat(batch_size,1,dk) # (batch_size , seq_len , k_dim)
     alphav = self.alpha.view(1,seq_len,1).repeat(batch_size,1,dv) # (batch_size , seq_len , v_dim)
-
+    
     # Computation of dimension aware knobs for better learning of position aware temperature for query vectors
 
     attn_map_exps = torch.bmm(Q , K.transpose(1,2)) #(batch_size , seq_len , seq_len)
-     
-    max_ids = attn_map_exps.argmax(dim = 2 , keepdim = True) #(batch_size , seq_len , 1)
-    knobs = torch.zeros(batch_size , seq_len , dk) #(batch_size, seq_len , dk)
-    for batch_id in range(batch_size):
-      for token_id in range(seq_len):
-        for dim in range(dk):
-          knobs[batch_id , token_id , dim] = Q[batch_id , token_id , dim] * torch.sum(K[batch_id , : , dim] - K[batch_id , max_ids[batch_id , token_id , 0] , dim])
-    
-    knobs = torch.abs(knobs)
+    max_ids = attn_map_exps.argmax(dim=2, keepdim=True)
+    # max_ids: (batch_size, seq_len, 1)
+    max_ids_exp = max_ids.expand(-1, -1, dk)  # (batch_size, seq_len, dk)
 
+    # Gather the max key for each position and batch
+    K_max = torch.gather(K, 1, max_ids_exp)  # (batch_size, seq_len, dk)
+
+    # Sum over sequence dimension
+    K_sum = K.sum(dim=1, keepdim=True)  # (batch_size, 1, dk)
+
+    # Compute knobs
+    knobs = Q * (K_sum - seq_len * K_max)  # (batch_size, seq_len, dk)
+    knobs = knobs.abs()
     # Knob computation ends here
 
-    indicesk = torch.arange(1 , seq_len+1 , device = alphaq.device).expand(batch_size, seq_len, dk)
-    indicesv = torch.arange(1 , seq_len+1 , device = alphaq.device).expand(batch_size, seq_len, dv)
+    indicesk = torch.arange(1, seq_len + 1, device=alphaq.device).unsqueeze(1)  # (seq_len, 1)
+    indicesk = indicesk.expand(seq_len, dk)  # (seq_len, dk)
+    indicesk = indicesk.unsqueeze(0).expand(batch_size, seq_len, dk)  # (batch_size, seq_len, dk)
+    
+    indicesv = torch.arange(1, seq_len + 1, device=alphaq.device).unsqueeze(1)  # (seq_len, 1)
+    indicesv = indicesv.expand(seq_len, dv)  # (seq_len, dv)
+    indicesv = indicesv.unsqueeze(0).expand(batch_size, seq_len, dv)  # (batch_size, seq_len, dv)
 
     position_temp_q = 1 + torch.sigmoid(alphaq - knobs) * torch.log(indicesk) #(batch_size , seq_len ,dk)
     position_temp_v = 1 + torch.sigmoid(alphav) * torch.log(indicesv) #(batch_size , seq_len ,dv)

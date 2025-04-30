@@ -89,7 +89,7 @@ def visualize_temp_map(model, img_tensor,save_path , class_names=None):
     v_max = max([temps[0 , 1:].max() for temps in temps_v])
     normv = Normalize(vmin=v_min, vmax=v_max)
 
-    # Visualize attention maps for selected layers
+    # Visualize temperature maps for selected layers
     cmap_overlay = 'hot'
 
     for idx, layer_idx in enumerate(selected_layers):

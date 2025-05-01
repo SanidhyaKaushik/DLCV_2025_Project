@@ -1,3 +1,6 @@
+from ViT_MSA.py import ViTModifiedSelectiveAttention
+from Train_MSA.py import train_vit_cifar10
+
 model = ViTWithModifiedSelectiveAttention(
         img_size=32,
         patch_size=8,

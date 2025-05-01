@@ -1,3 +1,5 @@
+from ViT_SA.py import ViTWithSelectiveAttention
+from Training_SA.py import train_vit_cifar10
 model = ViTWithSelectiveAttention(
         img_size=32,
         patch_size=8,

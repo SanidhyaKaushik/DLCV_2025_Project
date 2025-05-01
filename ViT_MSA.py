@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 from torchvision.transforms import ToTensor, RandomCrop, RandomHorizontalFlip, Compose
 import torch.nn as nn
-
+from Modified_Selective_Attention_Module.py import ModifiedSelectiveAttentionModule
 
 # Vision Transformer Components
 class PatchEmbedding(nn.Module):

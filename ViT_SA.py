@@ -6,6 +6,7 @@ from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 from torchvision.transforms import ToTensor, RandomCrop, RandomHorizontalFlip, Compose
 from tqdm import tqdm
+from Selective_Attention_Module.py import SelectiveAttentionModule
 
 class PatchEmbedding(nn.Module):
     "Function implementing Patch Embedding"
